@@ -92,6 +92,7 @@
               // Add option
               var input = $(htmlID);
               data.forEach(function(light) {
+                console.log('LIFX-output:', light);
                 input.append($('<option>').val(light.id).text(
                   (light.name || light.id ) +
                   (light.info ? (' (' + light.info + ')'):'')

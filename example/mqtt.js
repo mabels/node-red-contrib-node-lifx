@@ -1,11 +1,17 @@
-var LightServer = require('node-red-contrib-node-lifx');
+// var LightServer = require('node-red-contrib-node-lifx');
+// var LightServer = require('..');
 var mqtt        = require('mqtt');
 
+const LifxClient = require('lifx-lan-client').Client;
+const client = new LifxClient();
+
 var config = {
-  mqtt: 'mqtt://<mqtt server>',
+  mqtt: 'mqtt://192.168.202.4:1883',
   server: {
   }
 }
+
+var base = 'lifx';
 
 // List of all detected lights
 var lightsList = {};
@@ -14,16 +20,19 @@ var mqttClient  = mqtt.connect(config.mqtt);
 
 // Wait for connection
 mqttClient.on('connect', () => {
+  console.log('MQTT-Connect', config);
   // List of all detected lights with topic
   var allLights = [];
 
-  var server = new LightServer(config.server);
+  const client = new LifxClient();
+  // var server = new LightServer(config.server);
 
-  server.on('light-new', (lightInfo) => {
-    var baseTopic = 'lights/' + lightInfo.id;
+  client.on('light-new', (lightInfo) => {
+    console.log('xxx', lightInfo);
+    var baseTopic = base + '/' + lightInfo.id;
     if (lightsList.hasOwnProperty(baseTopic))
       return;
-    var handle = server.getLightHandler(lightInfo.id);
+    var handle = client.getLightHandler(lightInfo.id);
 
     // Remember base topic
     lightsList[baseTopic] = handle;
@@ -38,12 +47,13 @@ mqttClient.on('connect', () => {
     });
 
     // publish list of all detected lights
-    mqttClient.publish('lights', JSON.stringify(allLights), { retain: true} );
+    mqttClient.publish(base, JSON.stringify(allLights), { retain: true} );
   });
 });
 
 // Handle messages
 mqttClient.on('message', (topic, message) => {
+  console.log('mqtt->', topic, message);
   var pattern = /^(.*)\/(on|brightness)$/;
 
   // Check that the pattern match
